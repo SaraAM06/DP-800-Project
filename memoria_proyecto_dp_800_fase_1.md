@@ -58,3 +58,42 @@ INSERT INTO Incidencias (OperadorID, Titulo, Descripcion, Estado) VALUES
 ```
 ![incidencias insertadas](capturas/incidencias_insertadas.png)
 
+### 1.4. Conexión entre la Aplicación y la Base de Datos
+Para establecer la comunicación entre el backend y SQL Server, se instalaron las dependencias necesarias (`fastapi`, `uvicorn`, `pyodbc`). Se desarrolló un *endpoint* de prueba en el archivo `app/main.py`.
+
+**Código de app/main.py:**
+```python
+import pyodbc
+from fastapi import FastAPI
+
+app = FastAPI(title="API Gestión de Incidencias DP-800")
+
+SERVER = 'TU_SERVIDOR' # Configurado según la instancia local
+DATABASE = 'IncidentesDB'
+DRIVER = '{ODBC Driver 17 for SQL Server}' 
+
+def get_db_connection():
+    conn = pyodbc.connect(f'DRIVER={DRIVER};SERVER={SERVER};DATABASE={DATABASE};Trusted_Connection=yes;')
+    return conn
+
+@app.get("/test-db")
+def test_connection():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT @@VERSION")
+        row = cursor.fetchone()
+        conn.close()
+        return {"status": "conexión exitosa", "sql_version": row[0]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+```
+
+**Resolución de incidencias de acceso:**
+Durante la primera prueba, la API devolvió el error `18456` debido a que el usuario de Windows no tenía permisos de acceso a la base de datos. Esto se solucionó desde SQL Server Management Studio, creando un "Nuevo inicio de sesión" para el usuario y otorgándole el rol de servidor `sysadmin`.
+
+Tras aplicar este ajuste y ejecutar el servidor web de FastAPI (`python -m uvicorn main:app --reload`), la prueba de conexión devolvió un estado exitoso y la versión correcta de SQL Server.
+![conexion fastAPI](capturas/conexion_fastapi.png)
+
+
+
