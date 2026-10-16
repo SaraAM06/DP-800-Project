@@ -93,6 +93,7 @@ def test_connection():
 Durante la primera prueba, la API devolvió el error `18456` debido a que el usuario de Windows no tenía permisos de acceso a la base de datos. Esto se solucionó desde SQL Server Management Studio, creando un "Nuevo inicio de sesión" para el usuario y otorgándole el rol de servidor `sysadmin`.
 
 Tras aplicar este ajuste y ejecutar el servidor web de FastAPI (`python -m uvicorn main:app --reload`), la prueba de conexión devolvió un estado exitoso y la versión correcta de SQL Server.
+
 ![conexion fastAPI](capturas/conexion_fastapi.png)
 
 
