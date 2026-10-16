@@ -114,12 +114,12 @@ Para garantizar el correcto funcionamiento de estos procedimientos antes de la i
 **1. Prueba de Inserción de Incidencia:**
 Se simuló la creación manual de un ticket ejecutando el procedimiento `sp_InsertarIncidencia`, validando que el motor de base de datos lo registra correctamente y devuelve el ID generado.
 
-![prueba insercion](capturas/insertar_incidencias.png)
+![prueba insercion](capturas/insertar_incidencia.png)
 
 **2. Prueba de Actualización y Resolución:**
 Se simuló la resolución técnica del ticket anterior ejecutando `sp_ActualizarIncidencia`. Posteriormente, se verificó el registro comprobando que el estado y la solución se guardaron correctamente.
 
-![comprobar resultado](capturas/comprobacción_procedimientos.png)
+![comprobar resultado](capturas/comprobaccion_procedimientos.png)
 
 ### 2.3. Optimización: Índices y Planes de Ejecución
 Se ha analizado el rendimiento del motor de base de datos ante consultas frecuentes para aplicar mejoras proactivas. Se tomó como caso de uso la búsqueda de tickets filtrados por estado.
