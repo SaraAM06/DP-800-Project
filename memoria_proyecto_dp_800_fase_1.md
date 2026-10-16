@@ -44,7 +44,7 @@ CREATE TABLE Incidencias (
     Solucion NVARCHAR(MAX)
 );
 ```
-> *(Inserta aquí la captura del explorador de objetos de SSMS con las tablas)*
+![tablas creadas](capturas/tablas_creadas.png)
 
 ### 1.3. Generación de Datos de Prueba (Mock Data)
 Para preparar la futura búsqueda semántica, se ha utilizado Inteligencia Artificial generativa para poblar la base de datos con registros que simulan incidencias de soporte técnico reales, utilizando lenguaje natural variado. 
@@ -56,4 +56,5 @@ Primero se insertaron los registros en la tabla `Operadores` para respetar la in
 INSERT INTO Incidencias (OperadorID, Titulo, Descripcion, Estado) VALUES 
 (3, 'Mi pantalla parpadea', 'Mi pantalla parpadea de forma constante cuando abro Excel o cualquier programa de Office, me marea bastante.', 'Abierto');
 ```
-> *(Inserta aquí la captura de la consulta SELECT * FROM Incidencias mostrando los datos)*
+![incidencias insertadas](capturas/incidencias_insertadas.png)
+
