@@ -96,5 +96,51 @@ Tras aplicar este ajuste y ejecutar el servidor web de FastAPI (`python -m uvico
 
 ![conexion fastAPI](capturas/conexion_fastapi.png)
 
+## Fase 2: Seguridad, Optimización y Programación Básica
+
+### 2.1. Seguridad: Enmascaramiento de Datos (DDM)
+Para proteger la información sensible de los operadores frente a accesos no autorizados, se ha implementado *Dynamic Data Masking* (DDM) nativo de SQL Server en la tabla `Operadores`. Concretamente, se ha enmascarado la columna `Email` para que los usuarios sin privilegios vean un formato ofuscado.
+
+```sql
+ALTER TABLE Operadores
+ALTER COLUMN Email ADD MASKED WITH (FUNCTION = 'email()');
+```
+
+### 2.2. Programación Básica y Pruebas de Ejecución (CRUD)
+Por motivos de seguridad e integridad, las operaciones de modificación de datos no se delegan directamente a los modelos de IA. En su lugar, se han desarrollado Procedimientos Almacenados en T-SQL para centralizar y asegurar la inserción, actualización y eliminación de tickets.
+
+Para garantizar el correcto funcionamiento de estos procedimientos antes de la integración con la IA, se han realizado las siguientes pruebas:
+
+**1. Prueba de Inserción de Incidencia:**
+Se simuló la creación manual de un ticket ejecutando el procedimiento `sp_InsertarIncidencia`, validando que el motor de base de datos lo registra correctamente y devuelve el ID generado.
+
+![prueba insercion](capturas/insertar_incidencias.png)
+
+**2. Prueba de Actualización y Resolución:**
+Se simuló la resolución técnica del ticket anterior ejecutando `sp_ActualizarIncidencia`. Posteriormente, se verificó el registro comprobando que el estado y la solución se guardaron correctamente.
+
+![comprobar resultado](capturas/comprobacción_procedimientos.png)
+
+### 2.3. Optimización: Índices y Planes de Ejecución
+Se ha analizado el rendimiento del motor de base de datos ante consultas frecuentes para aplicar mejoras proactivas. Se tomó como caso de uso la búsqueda de tickets filtrados por estado.
+
+**1. Análisis de consulta sin optimizar:**
+Al ejecutar `SELECT Titulo, Descripcion, Estado FROM Incidencias WHERE Estado = 'Abierto';`, el Plan de Ejecución de SQL Server reveló un *Clustered Index Scan*. Esto indicaba que el motor estaba realizando un escaneo completo, leyendo secuencialmente toda la tabla.
+
+![incidencia sin optimiza](capturas/plan_ejecucion.png)
+
+**2. Implementación de índices:**
+Para resolver el cuello de botella, se creó un índice no agrupado apuntando específicamente a la columna implicada en el filtrado.
+
+```sql
+CREATE NONCLUSTERED INDEX IX_Incidencias_Estado 
+ON Incidencias(Estado);
+```
+
+**3. Verificación de la optimización:**
+Al repetir exactamente la misma consulta, el Plan de Ejecución se actualizó a un *Index Seek*. Esto confirmó que el motor de SQL Server utilizó el nuevo índice para localizar directamente las filas requeridas, optimizando el consumo de recursos y los tiempos de respuesta.
+
+![incidencia optimizada](capturas/plan_ejecucion_optimizado.png)
+
 
 
