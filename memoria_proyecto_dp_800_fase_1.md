@@ -142,5 +142,36 @@ Al repetir exactamente la misma consulta, el Plan de Ejecución se actualizó a 
 
 ![incidencia optimizada](capturas/plan_ejecucion_optimizado.png)
 
+# Fase 3: Integración de Inteligencia Artificial Local (Ollama)
 
+## Objetivo
+Implementar un motor de inteligencia artificial 100% local utilizando Ollama para garantizar la privacidad de los datos. Los modelos requeridos son:
+- **nomic-embed-text**: Para generar vectores (embeddings) a partir de los textos de los tickets.
+- **llama3.2**: Para razonamiento lógico y traducción de lenguaje natural a consultas SQL.
+
+## Problemas Encontrados y Soluciones
+
+### 1. Bloqueo de Red en la Terminal (Firewall/DNS)
+**Problema:** Al intentar descargar los modelos mediante el comando estándar (`ollama pull llama3.2`), la terminal se quedaba atascada indefinidamente en el estado `"pulling manifest"`. Esto fue causado por un bloqueo de red a nivel de sistema operativo o configuración de DNS que impedía a Ollama conectarse a sus servidores de registro.
+
+**Solución (Instalación Offline):**
+Se optó por descargar los pesos de los modelos manualmente desde el navegador (Hugging Face) en formato `.gguf` para saltar el bloqueo de la terminal.
+1. Se descargaron los archivos `nomic-embed-text-v1.5.f16.gguf` y `Llama-3.2-3B-Instruct-Q4_K_M.gguf` en una carpeta local (`C:\Modelos`).
+2. Se crearon archivos de instrucciones (`Modelfile.txt` y `Modelfile_llama.txt`) apuntando al archivo local usando el comando `FROM ./[nombre_del_archivo]`.
+3. Se compilaron los modelos localmente usando el comando `ollama create`.
+
+![Creación de modelo Nomic Embed Text](capturas/ollama_descarga_1.png)
+
+![Creación de modelo Llama 3.2](capturas/ollama_descarga_2.png)
+
+## Resultado Final
+Se instaló la librería oficial de Python (`pip install ollama`).
+
+![Instalación de la librería Ollama](capturas/ollama_descarga_3.png)
+
+Tras ajustar los nombres en el código, el endpoint `/test-ia` respondió exitosamente, confirmando que:
+1. `nomic-embed-text` genera vectores correctamente (longitud de 768 dimensiones).
+2. `llama3.2` recibe y responde prompts desde Python.
+
+![Prueba de conexión exitosa](capturas/prueba_conexion_ia.png)
 
