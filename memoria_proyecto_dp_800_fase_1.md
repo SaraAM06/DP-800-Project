@@ -169,7 +169,7 @@ Se instaló la librería oficial de Python (`pip install ollama`).
 
 ![Instalación de la librería Ollama](capturas/ollama_descarga_3.png)
 
-Tras ajustar los nombres en el código, el endpoint `/test-ia` respondió exitosamente, confirmando que:
+El endpoint `/test-ia` respondió exitosamente, confirmando que:
 1. `nomic-embed-text` genera vectores correctamente (longitud de 768 dimensiones).
 2. `llama3.2` recibe y responde prompts desde Python.
 
