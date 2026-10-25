@@ -195,6 +195,7 @@ Durante las pruebas de integración, se determinó que permitir al LLM responder
 El endpoint principal `/sugerir-solucion` centraliza esta lógica. Convierte la petición del usuario a vector mediante `nomic-embed-text`, y consulta SQL Server usando la función nativa `VECTOR_DISTANCE`. 
 
 ![sugerir solucion input](capturas/post_sugerir_solucion.png)
+
 ![sugerir solucion output](capturas/post_sugerir_solucion_respuesta.png)
 
 ## 4.3. Interfaz de Usuario (Frontend)
@@ -211,18 +212,22 @@ Se realizaron diversas pruebas funcionales para comprobar el acierto semántico 
 
 **1. Búsqueda con sinónimos (Hardware y Ofimática):**
 El modelo asocia "rayas y titila" con problemas de monitor, devolviendo una solución estructurada.
+
 ![Prueba de coincidencia de monitor](capturas/prueba_1.png)
 
 **2. Comprensión semántica de almacenamiento:**
 El sistema enlaza "disco C casi sin espacio" con el histórico de "Disco duro lleno" correctamente.
+
 ![Prueba de coincidencia de disco duro](capturas/prueba_2.png)
 
 **3. Software específico (Microsoft Teams):**
 El motor reconoce caídas en videollamadas asociándolas a problemas de caché y aceleración de hardware.
+
 ![Prueba de coincidencia de Teams](capturas/prueba_3.png)
 
 **4. Blindaje contra consultas fuera de dominio (Out-of-Domain):**
 Al introducir texto no relacionado con soporte técnico ("hola, ¿Cómo te llamas?"), el umbral matemático descarta todos los tickets y el sistema se niega a inventar una respuesta, sugiriendo la apertura de un ticket tradicional.
+
 ![Prueba de denegación](capturas/prueba_4.png)
 
 ## Conclusión de la Fase 4
