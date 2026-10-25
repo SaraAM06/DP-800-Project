@@ -4,7 +4,7 @@
 ## Fase 1: Configuración inicial y Diseño Relacional
 
 ### 1.1. Inicialización del Entorno y Control de Versiones
-Se ha creado la estructura de directorios en local separando la lógica del proyecto en tres bloques principales: aplicación (`app`), base de datos (`database`) y documentación (`docs`). 
+Se ha creado la estructura de directorios en local separando la lógica del proyecto en distintas carpetas. 
 
 Para el control de versiones, se ha inicializado Git y se ha vinculado a un repositorio remoto en GitHub.
 
@@ -16,8 +16,6 @@ git add .
 git commit -m "Inicialización del proyecto y estructura de carpetas"
 git push -u origin main
 ```
-> *(Inserta aquí la captura de tu repositorio de GitHub)*
-> *(Opcional: Inserta aquí la captura de la consola resolviendo el merge con Vim)*
 
 ### 1.2. Diseño de la Base de Datos Relacional
 La base de datos se ha montado sobre SQL Server 2025 utilizando SQL Server Management Studio (SSMS). Se ha creado el esquema inicial `IncidentesDB` con dos tablas principales relacionadas por una clave foránea (`OperadorID`):
