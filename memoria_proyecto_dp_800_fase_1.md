@@ -175,3 +175,56 @@ El endpoint `/test-ia` respondió exitosamente, confirmando que:
 
 ![Prueba de conexión exitosa](capturas/prueba_conexion_ia.png)
 
+# Fase 4: Sistema RAG Estricto y Búsqueda Semántica Avanzada
+
+## Objetivo
+
+Implementar la arquitectura final de Recuperación Aumentada por Generación (RAG). El objetivo es utilizar las capacidades vectoriales de SQL Server 2025 para encontrar tickets históricos similares y emplear el modelo de lenguaje Llama 3.2 (ejecutado localmente vía Ollama) para redactar soluciones técnicas estructuradas, limitando estrictamente su conocimiento a la base de datos corporativa.
+
+## 4.1. Evolución de la Arquitectura: Enfoque RAG Estricto (Pure RAG)
+
+Durante las pruebas de integración, se determinó que permitir al LLM responder con "conocimiento general" cuando no había coincidencias en la base de datos introducía un riesgo de respuestas no verificadas corporativamente. Para garantizar la máxima fiabilidad en un entorno de producción, se evolucionó hacia un **RAG Estricto**:
+
+1. **Filtrado Matemático Riguroso (Thresholding):** Se establecieron variables de control estricto en el backend (`UMBRAL_DISTANCIA = 0.45` y `MARGEN_RELATIVO = 0.04`). SQL Server descarta automáticamente cualquier ticket cuya distancia del coseno supere este límite.
+2. **Eliminación del Conocimiento General:** Si la base de datos no devuelve resultados por debajo del umbral, el sistema interrumpe el flujo y deniega la respuesta, instando al usuario a abrir un nuevo ticket. El LLM ya no intenta adivinar soluciones.
+3. **Extracción de Múltiples Contextos:** El sistema recupera los `MAX_CANDIDATOS` más cercanos y agrupa varios casos relevantes para enriquecer la solución de forma segura.
+4. **Forzado de Esquema JSON (Structured Output):** Llama 3.2 devuelve la solución bajo un esquema JSON rígido, garantizando que el *frontend* reciba siempre una lista procesable (`pasos`) y un booleano de validez (`aplicable`).
+
+## 4.2. Implementación en FastAPI (Backend)
+
+El endpoint principal `/sugerir-solucion` centraliza esta lógica. Convierte la petición del usuario a vector mediante `nomic-embed-text`, y consulta SQL Server usando la función nativa `VECTOR_DISTANCE`. 
+
+![sugerir solucion input](capturas/post_sugerir_solucion.png)
+![sugerir solucion output](capturas/post_sugerir_solucion_respuesta.png)
+
+## 4.3. Interfaz de Usuario (Frontend)
+
+Se limpió la interfaz eliminando opciones ambiguas para el usuario (como el checkbox de consejo general). El diseño es minimalista, responsive y manejado de forma asíncrona (Fetch API) desde un archivo `index.html`.
+
+La interfaz ahora maneja dos estados visuales claros:
+* **Éxito (Violeta):** Muestra los pasos técnicos exactos y lista la fuente corporativa utilizada.
+* **Denegación / Sin coincidencias (Gris):** Informa de que no hay un historial fiable y bloquea la generación de la IA.
+
+## 4.4. Pruebas de Validación
+
+Se realizaron diversas pruebas funcionales para comprobar el acierto semántico y el blindaje del sistema ante consultas no pertinentes:
+
+**1. Búsqueda con sinónimos (Hardware y Ofimática):**
+El modelo asocia "rayas y titila" con problemas de monitor, devolviendo una solución estructurada.
+![Prueba de coincidencia de monitor](capturas/prueba_1.png)
+
+**2. Comprensión semántica de almacenamiento:**
+El sistema enlaza "disco C casi sin espacio" con el histórico de "Disco duro lleno" correctamente.
+![Prueba de coincidencia de disco duro](capturas/prueba_2.png)
+
+**3. Software específico (Microsoft Teams):**
+El motor reconoce caídas en videollamadas asociándolas a problemas de caché y aceleración de hardware.
+![Prueba de coincidencia de Teams](capturas/prueba_3.png)
+
+**4. Blindaje contra consultas fuera de dominio (Out-of-Domain):**
+Al introducir texto no relacionado con soporte técnico ("hola, ¿Cómo te llamas?"), el umbral matemático descarta todos los tickets y el sistema se niega a inventar una respuesta, sugiriendo la apertura de un ticket tradicional.
+![Prueba de denegación](capturas/prueba_4.png)
+
+## Conclusión de la Fase 4
+
+Se ha logrado construir un portal de soporte autónomo, seguro y libre de alucinaciones. Al restringir el sistema a un RAG Estricto con salida JSON forzada, se cumplen los requisitos técnicos de nivel empresarial para la certificación DP-800, demostrando un dominio absoluto sobre bases de datos relacionales con capacidades vectoriales y modelos de IA locales.
