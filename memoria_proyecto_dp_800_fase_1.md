@@ -185,7 +185,7 @@ Implementar la arquitectura final de Recuperación Aumentada por Generación (RA
 
 Durante las pruebas de integración, se determinó que permitir al LLM responder con "conocimiento general" cuando no había coincidencias en la base de datos introducía un riesgo de respuestas no verificadas corporativamente. Para garantizar la máxima fiabilidad en un entorno de producción, se evolucionó hacia un **RAG Estricto**:
 
-1. **Filtrado Matemático Riguroso (Thresholding):** Se establecieron variables de control estricto en el backend (`UMBRAL_DISTANCIA = 0.45` y `MARGEN_RELATIVO = 0.04`). SQL Server descarta automáticamente cualquier ticket cuya distancia del coseno supere este límite.
+1. **Filtrado Matemático Riguroso (Thresholding):** Se establecieron variables de control estricto en el backend (`UMBRAL_DISTANCIA = 0.35` y `MARGEN_RELATIVO = 0.04`). SQL Server descarta automáticamente cualquier ticket cuya distancia del coseno supere este límite.
 2. **Eliminación del Conocimiento General:** Si la base de datos no devuelve resultados por debajo del umbral, el sistema interrumpe el flujo y deniega la respuesta, instando al usuario a abrir un nuevo ticket. El LLM ya no intenta adivinar soluciones.
 3. **Extracción de Múltiples Contextos:** El sistema recupera los `MAX_CANDIDATOS` más cercanos y agrupa varios casos relevantes para enriquecer la solución de forma segura.
 4. **Forzado de Esquema JSON (Structured Output):** Llama 3.2 devuelve la solución bajo un esquema JSON rígido, garantizando que el *frontend* reciba siempre una lista procesable (`pasos`) y un booleano de validez (`aplicable`).
