@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soporte IA - DP-800</title>
+<style>
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f3f4f6;display:flex;justify-content:center;min-height:100vh;margin:0;padding:40px 20px;box-sizing:border-box}
+.container{background:#fff;padding:40px;border-radius:12px;box-shadow:0 10px 15px -3px rgba(0,0,0,.1);width:100%;max-width:650px;height:fit-content}
+h1{color:#1f2937;text-align:center;margin-bottom:5px}
+p.sub{color:#6b7280;text-align:center;margin-bottom:25px}
+textarea{width:100%;height:120px;padding:15px;border:1px solid #d1d5db;border-radius:8px;resize:none;font-family:inherit;font-size:15px;margin-bottom:18px;background:#f9fafb;box-sizing:border-box}
+textarea:focus{outline:none;border-color:#8b5cf6}
+button{background:#8b5cf6;color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:16px;font-weight:bold;transition:background-color .2s}
+button:hover:not(:disabled){background:#7c3aed}
+button:disabled{background:#d8b4fe;cursor:wait}
+#estado{text-align:center;margin-top:20px;font-style:italic;color:#4b5563;display:none}
+#resultado{margin-top:25px;padding:20px;border-radius:6px;display:none;font-size:15px;line-height:1.5;border-left:4px solid}
+#resultado.ok{background:#f5f3ff;border-color:#8b5cf6;color:#4c1d95}
+#resultado.none{background:#f3f4f6;border-color:#6b7280;color:#374151}
+#resultado.err{background:#fef2f2;border-color:#dc2626;color:#991b1b}
+#resultado ol{margin:10px 0 0;padding-left:22px}
+#resultado .fuentes{margin-top:14px;font-size:13px;opacity:.8}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Portal de Soporte IA</h1>
+  <p class="sub">Describe tu incidencia y buscaremos casos similares ya resueltos.</p>
+  <textarea id="problema" placeholder="Ej: La pantalla parpadea cuando abro Excel..."></textarea>
+  <button onclick="consultarIA()" id="btn-consultar">Consultar IA</button>
+  <div id="estado">Buscando en la base de conocimientos... ⏳</div>
+  <div id="resultado"></div>
+</div>
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function pintar(data) {
+  const r = document.getElementById('resultado');
+  let html = '', cls = 'none';
+  if (data.status !== 'éxito') {
+    cls = 'err';
+    html = `<strong>Error:</strong> ${esc(data.message)}`;
+  } else if (data.nivel_confianza === 'basado_en_historico') {
+    cls = 'ok';
+    html = `<strong>Solución basada en casos reales resueltos:</strong><ol>` +
+      data.pasos.map(p => `<li>${esc(p).replace(/^\s*\d+[\).]\s*/, '')}</li>`).join('') + `</ol>` +
+      `<div class="fuentes">Caso de referencia: ${data.tickets_usados.map(t => esc(t.titulo)).join(' · ')}</div>`;
+  } else {
+    html = `<strong>No puedo darte una solución fiable.</strong><br>${esc(data.mensaje)}`;
+  }
+  r.className = cls;
+  r.innerHTML = html;
+  r.style.display = 'block';
+}
+
+async function consultarIA() {
+  const problema = document.getElementById('problema').value.trim();
+  const btn = document.getElementById('btn-consultar');
+  const estado = document.getElementById('estado');
+  const r = document.getElementById('resultado');
+  if (!problema) { alert('Por favor, describe brevemente la incidencia.'); return; }
+  btn.disabled = true; estado.style.display = 'block'; r.style.display = 'none';
+  try {
+    const resp = await fetch('/sugerir-solucion', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ descripcion_problema: problema })
+    });
+    pintar(await resp.json());
+  } catch (e) {
+    pintar({status: 'error', message: 'No se pudo conectar con el servidor.'});
+  } finally {
+    estado.style.display = 'none'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
