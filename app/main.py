@@ -8,19 +8,20 @@ from fastapi.responses import FileResponse
 
 app = FastAPI(title="API Gestión de Incidencias DP-800")
 
-# --- CONFIGURACIÓN DE BASE DE DATOS ---
+# Credenciales y conexión a SQL Server
 SERVER = 'localhost'
 DATABASE = 'IncidentesDB'
 DRIVER = '{ODBC Driver 17 for SQL Server}'
 
-# --- CONFIGURACIÓN DE LA IA ---
-UMBRAL_DISTANCIA = 0.35   # CALIBRAR con /buscar-similares o pruebas.py
-MARGEN_RELATIVO = 0.04    # solo entran al contexto tickets casi tan cercanos como el mejor
-MAX_CANDIDATOS = 2        # tickets que se recuperan de la BD
-MAX_CONTEXTO = 1          # tickets que se pasan al LLM (1 = sin mezclas)
+# Parámetros de control para la IA y la búsqueda vectorial
+UMBRAL_DISTANCIA = 0.35   # Límite de distancia para considerar un ticket válido
+MARGEN_RELATIVO = 0.04    # Diferencia permitida respecto al mejor resultado
+MAX_CANDIDATOS = 2        # Límite de tickets extraídos de la base de datos
+MAX_CONTEXTO = 1          # Límite de tickets que leerá el modelo de lenguaje
 MODELO_LLM = 'llama3.2'
 MODELO_EMBED = 'nomic-embed-text'
 
+# Estructura JSON estricta que deberá devolver la IA
 ESQUEMA_RESPUESTA = {
     "type": "object",
     "properties": {
@@ -32,6 +33,7 @@ ESQUEMA_RESPUESTA = {
 
 
 def get_db_connection():
+    # Establece y devuelve la conexión segura con la base de datos
     connection_string = (
         f'DRIVER={DRIVER};SERVER={SERVER};DATABASE={DATABASE};'
         f'Trusted_Connection=yes;Encrypt=yes;TrustServerCertificate=yes;'
@@ -40,13 +42,12 @@ def get_db_connection():
 
 
 def embed(texto: str, tipo: str) -> str:
-    """tipo: 'search_document' al guardar, 'search_query' al buscar.
-    nomic-embed-text rinde mejor con estos prefijos."""
+    # Genera el vector matemático del texto usando el prefijo adecuado (búsqueda o guardado)
     r = ollama.embeddings(model=MODELO_EMBED, prompt=f"{tipo}: {texto}")
     return str(r['embedding'])
 
 
-# --- ESQUEMAS DE DATOS ---
+# Modelos de datos para validar las peticiones de los usuarios
 class TicketCreate(BaseModel):
     titulo: str
     descripcion: str
@@ -61,7 +62,7 @@ class SolicitudResolucion(BaseModel):
     descripcion_problema: str
 
 
-# --- ENDPOINTS DE PRUEBA ---
+# Rutas de diagnóstico para comprobar el estado de los servicios
 @app.get("/test-db")
 def test_connection():
     try:
@@ -96,11 +97,12 @@ def test_ia():
         return {"status": "error", "message": str(e)}
 
 
-# --- ENDPOINTS PRINCIPALES ---
+# Rutas funcionales de la aplicación
 @app.post("/tickets")
 def crear_ticket(ticket: TicketCreate):
     conn = None
     try:
+        # Transformamos el texto del ticket en un vector antes de guardarlo
         vector_str = embed(f"{ticket.titulo}. {ticket.descripcion}", "search_document")
 
         conn = get_db_connection()
@@ -125,7 +127,7 @@ def crear_ticket(ticket: TicketCreate):
 
 @app.post("/buscar-similares")
 def buscar_similares(busqueda: BusquedaTicket):
-    """Útil para CALIBRAR el umbral: devuelve las distancias reales."""
+    # Devuelve las distancias reales para ayudar a calibrar el umbral matemático
     conn = None
     try:
         vector_consulta = embed(busqueda.consulta, "search_query")
@@ -169,7 +171,7 @@ def buscar_similares(busqueda: BusquedaTicket):
 
 @app.post("/vectorizar-historico")
 def vectorizar_historico():
-    """Vectoriza las incidencias con VectorDescripcion NULL (Título + Descripción)."""
+    # Calcula y guarda los vectores de los tickets antiguos que aún no lo tengan
     conn = None
     try:
         conn = get_db_connection()
@@ -224,14 +226,14 @@ def sugerir_solucion(solicitud: SolicitudResolucion):
         """, (MAX_CANDIDATOS, vector))
         filas = cursor.fetchall()
 
-        # El CÓDIGO decide la relevancia, no el LLM
+        # Filtramos matemáticamente los resultados más relevantes antes de usar la IA
         mejor = filas[0].Distancia if filas else None
         relevantes = [
             f for f in filas
             if f.Distancia <= UMBRAL_DISTANCIA and f.Distancia <= mejor + MARGEN_RELATIVO
         ][:MAX_CONTEXTO]
 
-        # --- Caso 1: no hay precedentes ---
+        # Si no hay tickets lo suficientemente parecidos, rechazamos responder
         if not relevantes:
             return {
                 "status": "éxito",
@@ -242,7 +244,7 @@ def sugerir_solucion(solicitud: SolicitudResolucion):
                 "mejor_distancia": round(mejor, 3) if mejor is not None else None,
             }
 
-        # --- Caso 2: hay contexto real; el LLM solo reformula ---
+        # Si hay coincidencias, pedimos a la IA que extraiga los pasos basándose estrictamente en ellas
         contexto = "\n\n".join(
             f"[Ticket {i + 1}] Problema: {f.Descripcion}\nSolución aplicada: {f.Solucion}"
             for i, f in enumerate(relevantes)
@@ -267,8 +269,9 @@ def sugerir_solucion(solicitud: SolicitudResolucion):
         try:
             salida = json.loads(r['message']['content'])
         except json.JSONDecodeError:
-            # Respuesta cortada o mal formada: tratarla como "no aplicable"
+            # Por seguridad, si la IA no devuelve un JSON válido, descartamos la respuesta
             salida = {"aplicable": False, "pasos": []}
+        
         salida["pasos"] = salida.get("pasos", [])[:4]
 
         if not salida.get("aplicable") or not salida.get("pasos"):
@@ -298,4 +301,5 @@ def sugerir_solucion(solicitud: SolicitudResolucion):
 
 @app.get("/", response_class=FileResponse)
 def interfaz_usuario():
+    # Sirve el archivo HTML de la interfaz gráfica web
     return FileResponse("app/index.html")
