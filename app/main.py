@@ -298,4 +298,4 @@ def sugerir_solucion(solicitud: SolicitudResolucion):
 
 @app.get("/", response_class=FileResponse)
 def interfaz_usuario():
-    return FileResponse("index.html")
+    return FileResponse("app/index.html")
